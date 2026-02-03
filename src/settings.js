@@ -3,7 +3,7 @@ module.exports = {
   /**
    * @description 网站标题
    */
-  title: '安徽省高等学校计算机教育研究会竞赛管理系统',
+  title: '肺癌呼出气体质谱数据库',
 
   title2: '账户登录',
 

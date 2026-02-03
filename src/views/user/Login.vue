@@ -97,8 +97,8 @@ export default {
               authAPI.removeAccount()
             }
             this.$message.success('登录成功')
-            // 添加箭头函数是由于vue-router的升级，需要避免 navigation guard 的错误
-            setTimeout(() => { this.$router.push(this.redirect || '/Homepage', () => { }) }, 500)
+            // 登录后跳转到已注册的首页路由
+            setTimeout(() => { this.$router.push('/website/homepage', () => {}) }, 200)
             this.loading = false
           } catch (error) {
             this.loading = false

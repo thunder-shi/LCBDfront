@@ -35,6 +35,8 @@ export default {
 <style lang="scss">
 @import "@/assets/css/index.scss";
 #app {
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 </style>

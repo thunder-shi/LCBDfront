@@ -4,7 +4,7 @@
       <div class="logo">
         <img :src="newLogo" alt="加载失败" />
         <div class="title">
-          <div class="chinese">安徽省高等学校计算机教育研究会</div>
+          <div class="chinese">肺癌呼出气体质谱数据库</div>
           <div class="english">Research Association of Computer Education in Colleges and Universlities of Anhui province</div>
         </div>
       </div>
@@ -17,7 +17,7 @@
           <el-option v-for="item in options" :key="item.id" :title="item.channelCName" :label="item.channelCName" :value="item.id" />
         </el-select>
         <div class="btn-group">
-          <router-link class="btn" target="_blank" :to="{ path: '/Login' }">登录</router-link>
+          <router-link class="btn" target="_blank" :to="{ path: '/Login', query: { redirect: $route.fullPath } }">登录</router-link>
           <span>|</span>
           <router-link class="btn" target="_blank" :to="{ path: '/Register' }">注册</router-link>
         </div>

@@ -39,7 +39,7 @@ router.beforeEach(async(to, from, next) => {
       if (nextUrl.length) {
         next('/Homepage')
       } else {
-        const { menuList } = await store.dispatch('user/getUserInfo')
+        // const { menuList } = await store.dispatch('user/getUserInfo')
         const asyncRoutes = await filterAsyncRoutes(menuList)
         router.addRoute({ path: '*', redirect: '/404', hidden: true })
         await store.dispatch('generateRoutes', asyncRoutes)
@@ -54,7 +54,7 @@ router.beforeEach(async(to, from, next) => {
       } else {
         try {
           // 获取菜单信息及用户信息
-          const { menuList } = await store.dispatch('user/getUserInfo')
+          // const { menuList } = await store.dispatch('user/getUserInfo')
           await loadMenus(menuList, next, to)
           if (to.path === '/Homepage') {
             const val = '/Homepage'
@@ -83,9 +83,8 @@ router.beforeEach(async(to, from, next) => {
       // 如果需要跳转的页面在 whiteList 中，就直接跳转
       next()
     } else {
-      // 否则重定向到登录页
-      // next(`/Login?redirect=${to.path}`)
-      next('/website/homepage')
+      // 否则重定向到登录页，并记录原目标用于登录后返回
+      next(`/Login?redirect=${to.fullPath}`)
       NProgress.done()
     }
   }

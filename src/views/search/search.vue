@@ -104,43 +104,76 @@
       </el-card>
 
       <el-card class="results" shadow="hover">
-        <div class="section-title">Search Results & Visualization</div>
-        <div class="results-top">
-          <h3>Total Samples Found: {{ Array.isArray(serverList) ? page.total : filtered.length }}</h3>
+        <div class="section-title" ref="resultsTop">Search Results & Visualization</div>
+        <div class="results-top" ref="resultsHeader">
+          <h3>Total Samples Found: {{ filtered.length }}</h3>
         </div>
-        <el-table :data="tableData" border :height="tableHeight" @selection-change="onSelectionChange" v-loading="loading">
-          <el-table-column type="selection" width="48" />
-          <el-table-column prop="id" label="Patient ID" width="120" />
-          <el-table-column prop="cancerType" label="Cancer Type" width="160" />
-          <el-table-column prop="mutation" label="Mutation" width="120" />
-          <el-table-column prop="metaboliteA" label="Metabolite A (μg/μl)" width="180" />
-          <el-table-column label="Heatmap">
-            <template slot-scope="{ row }">
-              <div class="heatmap-thumb" :title="row.id"></div>
-            </template>
+        <div class="results-inner" ref="resultsBody">
+        <el-table :data="tableData" border stripe :height="tableHeight" @selection-change="onSelectionChange" v-loading="loading">
+          <el-table-column type="selection" width="48" fixed="left" />
+            <el-table-column prop="patientNo" label="患者编号" width="140" fixed="left" />
+          <el-table-column prop="exhaleNo" label="呼气编号" width="120" />
+          <el-table-column prop="name" label="姓名" width="140" />
+          <el-table-column label="性别" width="100">
+            <template slot-scope="{ row }">{{ renderGender(row.gender) }}</template>
           </el-table-column>
+          <el-table-column prop="age" label="年龄" width="100" />
+          <el-table-column prop="pathology" label="病理类型" width="140" />
+          <el-table-column prop="stage" label="分期" width="100" />
+          <el-table-column prop="gene" label="基因" width="120" />
+          <el-table-column prop="t" label="T" width="80" />
+          <el-table-column prop="n" label="N" width="80" />
+          <el-table-column prop="m" label="M" width="80" />
+          <el-table-column prop="efficacy" label="疗效" width="120" />
+          <el-table-column prop="singleChemo" label="化疗(单)" width="120">
+            <template slot-scope="{ row }">{{ toBool(row.singleChemo) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="immunoChemo" label="化疗联合免疫" width="140">
+            <template slot-scope="{ row }">{{ toBool(row.immunoChemo) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="targetedTherapy" label="靶向治疗" width="120">
+            <template slot-scope="{ row }">{{ toBool(row.targetedTherapy) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="adjuvantChemo" label="术后辅助化疗" width="140">
+            <template slot-scope="{ row }">{{ toBool(row.adjuvantChemo) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="emphysema" label="肺气肿" width="120">
+            <template slot-scope="{ row }">{{ toBool(row.emphysema) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="ild" label="间质性肺病" width="140">
+            <template slot-scope="{ row }">{{ toBool(row.ild) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="pneumonia" label="肺炎" width="120">
+            <template slot-scope="{ row }">{{ toBool(row.pneumonia) ? '是' : '否' }}</template>
+          </el-table-column>
+          <el-table-column prop="smokingHistory" label="吸烟史(年)" width="140" />
+          <el-table-column prop="smokingCessation" label="戒烟(年)" width="140" />
+          <el-table-column prop="fileName" label="文件名" width="160" />
         </el-table>
-        <div class="results-actions">
+        <div class="results-actions" ref="resultsActions">
           <el-button type="primary" @click="exportSelected">Export Selected to MetaboAnalyst</el-button>
         </div>
-        <el-pagination v-if="Array.isArray(serverList)"
+        <el-pagination
           class="results-pagination"
           background
           layout="prev, pager, next, jumper, sizes, total"
           :current-page="page.pageNum"
           :page-size="page.pageSize"
-          :page-sizes="[10,20,50]"
-          :total="Array.isArray(serverList) ? page.total : tableData.length"
+          :page-sizes="[10,30,50]"
+          :total="filtered.length"
           @current-change="onPageChange"
           @size-change="onPageSizeChange"
+          ref="resultsPagination"
         />
+        </div>
       </el-card>
     </div>
   </div>
  </template>
 
 <script>
-import { searchPatients } from '@/api/patient'
+import listAPI from '@/api/list'
+
 export default {
   name: 'SearchPage',
   data() {
@@ -170,94 +203,170 @@ export default {
           { label: '化疗', value: 'singleChemo' },
           { label: '化疗联合免疫', value: 'immunoChemo' },
           { label: '靶向治疗', value: 'targetedTherapy' },
-          { label: '术后辅助化疗', value: 'adjuvantChemo' }
+          { label: '术后辅助化疗', value: 'adjuvantChemo' },
+          { label: 'NA', value: 'na' }
         ],
-        recist: ['CR', 'PR', 'SD', 'PD']
+        recist: ['CR', 'PR', 'SD', 'PD', 'NA' ]
       },
       selectedRows: [],
-      tableHeight: 520,
+      tableHeight: 720,
       loading: false,
       serverList: null,
-      page: { pageNum: 1, pageSize: 20, total: 0 },
+      serverAll: null,
+      page: { pageNum: 1, pageSize: 30, total: 0 },
       dataset: [
-        { id: 'P-001', cancerType: 'Adenocarcinoma', tnmStage: 'II', mutation: 'EGFR', treatmentDays: 120, age: 62, recist: 'PR', metaboliteA: 3.5 },
-        { id: 'P-002', cancerType: 'Squamous', tnmStage: 'III', mutation: 'KRAS', treatmentDays: 80, age: 55, recist: 'SD', metaboliteA: 12.5 },
-        { id: 'P-003', cancerType: 'NSCLC', tnmStage: 'I', mutation: 'None', treatmentDays: 30, age: 48, recist: 'CR', metaboliteA: 5.6 },
-        { id: 'P-004', cancerType: 'SCLC', tnmStage: 'IV', mutation: 'ALK', treatmentDays: 200, age: 67, recist: 'PD', metaboliteA: 15.7 },
-        { id: 'P-005', cancerType: 'Adenocarcinoma', tnmStage: 'III', mutation: 'BRAF', treatmentDays: 60, age: 59, recist: 'PR', metaboliteA: 8.2 }
       ]
     }
   },
   computed: {
     filtered() {
-      return this.dataset.filter(row => {
-        const byType = this.filters.pathology ? row.cancerType === this.filters.pathology : true
-        const byStage = this.filters.stage ? row.tnmStage === this.filters.stage : true
-        const byMutation = this.filters.geneType ? row.mutation === this.filters.geneType : true
-        const byDays = row.treatmentDays >= 0 && row.treatmentDays <= (this.filters.treatmentDays || 400)
+      const source = Array.isArray(this.serverAll) ? this.serverAll : this.dataset
+      return source.filter(row => {
+        const byGender = this.filters.gender ? (this.toIntGender(row.gender) === this.filters.gender) : true
+        const byType = this.filters.pathology ? this.matchPathology(this.filters.pathology, row.pathology) : true
+        const byStage = this.filters.stage ? row.stage === this.filters.stage : true
+        const byMutation = this.filters.geneType ? this.matchGene(this.filters.geneType, row.gene) : true
+        let byTreatments = true
+        const selectedTreats = this.filters.treatments || []
+        if (selectedTreats.length) {
+          if (selectedTreats.includes('na')) {
+            const keys = ['singleChemo', 'immunoChemo', 'targetedTherapy', 'adjuvantChemo']
+            byTreatments = keys.every(k => !this.toBool(row[k]))
+          } else {
+            byTreatments = selectedTreats.every(key => this.toBool(row[key]))
+          }
+        }
         const byAge = row.age >= this.filters.ageRange[0] && row.age <= this.filters.ageRange[1]
-        const byRecist = this.filters.recist.length ? this.filters.recist.includes(row.recist) : true
-        return byType && byStage && byMutation && byDays && byAge && byRecist
+        const byRecist = this.matchRecist(this.filters.recist, row.efficacy)
+        return byGender && byType && byStage && byMutation && byTreatments && byAge && byRecist
       })
     },
     tableData() {
-      // 优先使用后端返回的列表，否则回退到本地过滤
-      return Array.isArray(this.serverList) ? this.serverList : this.filtered
+      // 前端分页：对 filtered 结果进行切片
+      const start = (this.page.pageNum - 1) * this.page.pageSize
+      const end = start + this.page.pageSize
+      return this.filtered.slice(start, end)
     }
   },
   methods: {
+    matchPathology(filterVal, rowVal) {
+      if (!filterVal) return true
+      const fv = String(filterVal).trim()
+      const rv = rowVal == null ? '' : String(rowVal).trim()
+      const aliasMap = {
+        '肺鳞癌': ['鳞癌', '肺鳞癌'],
+        '肺腺癌': ['腺癌', '肺腺癌'],
+        '小细胞肺癌': ['小细胞', '小细胞癌', '小细胞肺癌']
+      }
+      if (fv === '其他') {
+        const excludes = ([]).concat(...Object.values(aliasMap))
+        return !excludes.includes(rv)
+      }
+      const aliases = aliasMap[fv] || [fv]
+      return aliases.includes(rv)
+    },
+    matchRecist(filterList, rowVal) {
+      if (!filterList || !filterList.length) return true
+      const v = rowVal == null ? '' : String(rowVal).trim().toUpperCase()
+      return filterList.some(f => {
+        const t = String(f).trim().toUpperCase()
+        if (t === 'NA') {
+          // NA 仅代表数值 0
+          return rowVal === 0 || String(rowVal).trim() === '0'
+        }
+        return v.startsWith(t)
+      })
+    },
+    matchGene(filterVal, rowVal) {
+      if (!filterVal) return true
+      // 无突变严格匹配为数值 0 或字符串 '0'
+      if (filterVal === '无突变') {
+        return rowVal === 0 || String(rowVal).trim() === '0'
+      }
+      const f = String(filterVal).trim().toUpperCase()
+      const r = rowVal == null ? '' : String(rowVal).trim().toUpperCase()
+      // 仅按整字段前缀匹配（开头匹配即可）
+      return r.startsWith(f)
+    },
+    toBool(val) {
+      if (typeof val === 'boolean') return val
+      if (typeof val === 'number') return val !== 0
+      if (typeof val === 'string') {
+        const s = val.trim().toLowerCase()
+        return ['1', 'true', 'yes', 'y', 't', '是'].includes(s)
+      }
+      return !!val
+    },
+    toIntGender(val) {
+      if (typeof val === 'number') return val
+      if (typeof val === 'string') {
+        const s = val.trim()
+        if (s === '1' || s === '男' || s.toLowerCase() === 'male' || s === 'M') return 1
+        if (s === '2' || s === '女' || s.toLowerCase() === 'female' || s === 'F') return 2
+        const n = Number(s)
+        return isNaN(n) ? null : n
+      }
+      return null
+    },
+    renderGender(val) {
+      const g = this.toIntGender(val)
+      if (g === 1) return '男'
+      if (g === 2) return '女'
+      return (val === undefined || val === null || val === '') ? '-' : String(val)
+    },
     updateTableHeight() {
       const vh = window.innerHeight || document.documentElement.clientHeight || 800
-      // 估算顶部标题与外边距高度，确保表格最小高度
-      const reserved = 260
-      const h = Math.max(380, vh - reserved)
-      this.tableHeight = h
+      // 通过测量结果区域可用空间，精确计算表格高度，减少底部空白
+      this.$nextTick(() => {
+        const body = this.$refs.resultsBody
+        if (!body) {
+          // 回退策略
+          const fallback = Math.max(500, vh - 220)
+          this.tableHeight = fallback
+          return
+        }
+        const top = body.getBoundingClientRect().top || 180
+        const actionsH = (this.$refs.resultsActions && this.$refs.resultsActions.offsetHeight) ? this.$refs.resultsActions.offsetHeight : 0
+        const paginationH = (this.$refs.resultsPagination && this.$refs.resultsPagination.$el && this.$refs.resultsPagination.$el.offsetHeight) ? this.$refs.resultsPagination.$el.offsetHeight : 0
+        const parent = body.parentElement
+        const pb = parent ? parseFloat((window.getComputedStyle(parent).paddingBottom || '0').replace('px','')) : 0
+        const extra = 12
+        const h = Math.max(420, vh - top - actionsH - paginationH - pb - extra)
+        this.tableHeight = h
+      })
     },
     async applyFilters() {
-      if (this.$store && this.$store.getters && this.$store.getters.token) {
-        await this.loadData()
-      }
+      this.page.pageNum = 1
       this.$message.success('Filters applied')
     },
     async loadData() {
       this.loading = true
       try {
-        // 将前端筛选映射为后端入参
-        const params = {
-          pageNum: this.page.pageNum,
-          pageSize: this.page.pageSize,
-          pathology: this.filters.pathology || undefined,
-          stage: this.filters.stage || undefined,
-          t: this.filters.t || undefined,
-          n: this.filters.n || undefined,
-          m: this.filters.m || undefined,
-          gender: this.filters.gender || undefined,
-          geneLike: this.filters.geneType && this.filters.geneType !== '无突变' ? this.filters.geneType : (this.filters.geneType === '无突变' ? 'None' : undefined),
-          ageMin: this.filters.ageRange[0],
-          ageMax: this.filters.ageRange[1],
-          efficacyList: this.filters.recist.length ? this.filters.recist : undefined
+        const size = 200
+        const first = await listAPI.getSomeRecords({
+          keyWords: 'PatientRecord',
+          searchKey: {},
+          pageInfo: { page: 1, size },
+        })
+        const firstList = first?.data?.content || []
+        const total = (first?.data?.totalElements !== undefined) ? first.data.totalElements : firstList.length
+        const totalPages = Math.max(1, Math.ceil(total / size))
+        let all = firstList
+        for (let p = 2; p <= totalPages; p++) {
+          const res = await listAPI.getSomeRecords({
+            keyWords: 'PatientRecord',
+            pageInfo: { page: p, size },
+            searchKey: {},
+          })
+          const pageList = res?.data?.content || []
+          all = all.concat(pageList)
         }
-        // 治疗方式布尔映射
-        if (this.filters.treatments && this.filters.treatments.length) {
-          this.filters.treatments.forEach(k => { params[k] = true })
-        }
-        const res = await searchPatients(params)
-        const list = res?.data?.content || []
-        const total = (res?.data?.totalElements !== undefined) ? res.data.totalElements : list.length
-        // 映射为表格所需字段
-        this.serverList = list.map(item => ({
-          id: item.patientNo || item.exhaleNo || item.id || '-',
-          cancerType: item.pathology || '-',
-          tnmStage: item.stage || '-',
-          mutation: item.gene || '-',
-          age: item.age,
-          recist: item.efficacy || '-',
-          metaboliteA: item.metaboliteA // 若后端无该字段，则为 undefined
-        }))
-        this.page.total = total
+        // 直接保留后端字段，便于表格直接展示
+        this.serverAll = all
+        this.page.total = this.filtered.length
       } catch (e) {
         // 后端未就绪或接口不匹配，回退到本地示例数据
-        this.serverList = null
+        this.serverAll = null
       } finally {
         this.loading = false
       }
@@ -276,20 +385,15 @@ export default {
     },
     async onPageChange(p) {
       this.page.pageNum = p
-      await this.loadData()
     },
     async onPageSizeChange(size) {
       this.page.pageSize = size
       this.page.pageNum = 1
-      await this.loadData()
     }
   },
   mounted() {
     this.updateTableHeight()
-    // 初次加载仅在已登录时请求后端，避免未登录取 key 报错
-    if (this.$store && this.$store.getters && this.$store.getters.token) {
-      this.loadData()
-    }
+    this.loadData()
     window.addEventListener('resize', this.updateTableHeight)
   },
   beforeDestroy() {
@@ -300,8 +404,17 @@ export default {
 
 <style lang="scss" scoped>
 .search-page {
-  color: #e6eef6;
-  background: #0f172a;
+  /* 医疗数据检索风格：清爽、专业、对比清晰 */
+  --bg: #f7f9fc;              /* 页面背景 */
+  --surface: #ffffff;         /* 卡片/表面 */
+  --border: #e5e7eb;          /* 边框 */
+  --text: #1f2937;            /* 正文文本 */
+  --muted: #6b7280;           /* 次级文本 */
+  --primary: #2b6cb0;         /* 医疗蓝主色 */
+  --accent: #2c7a7b;          /* 青色辅助 */
+
+  color: var(--text);
+  background: var(--bg);
   min-height: 100vh;
   padding: 24px 32px;
 }
@@ -315,22 +428,38 @@ export default {
 .search-body {
   width: 100%;
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 360px 1fr;
   gap: 20px;
 }
 
-.section-title { font-weight: 700; margin-bottom: 8px; }
-.filters { background: #111827; border: 1px solid rgba(255,255,255,.08); }
-.results { background: #111827; border: 1px solid rgba(255,255,255,.08); }
+.section-title { font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.filters { background: var(--surface); border: 1px solid var(--border); }
+.results { background: var(--surface); border: 1px solid var(--border); }
 .results .el-card__body { display: flex; flex-direction: column; height: 100%; }
 .filters-form { margin-top: 8px; }
 .form-group { margin-bottom: 12px; }
-.group-title { font-weight: 600; margin-bottom: 6px; opacity: .9; }
+.group-title { font-weight: 600; margin-bottom: 6px; color: var(--muted); }
 .apply { margin-top: 8px; }
 .results-top { margin-bottom: 8px; }
 .results-actions { margin-top: 10px; text-align: right; }
 .results-pagination { margin-top: 10px; }
-.heatmap-thumb { height: 44px; border-radius: 6px; background: linear-gradient(90deg, #0ea5e9, #22c55e, #f59e0b, #ef4444); filter: saturate(1.2) contrast(1.1); }
+.heatmap-thumb { height: 44px; border-radius: 6px; background: linear-gradient(90deg, #3b82f6, #14b8a6, #f59e0b, #ef4444); filter: saturate(1.05) contrast(1.05); }
+
+/* 学术风格：提高信息密度与可读性 */
+.results ::v-deep .el-table { font-size: 13px; color: var(--text); }
+.results ::v-deep .el-table .cell { padding: 0 8px; }
+.results ::v-deep .el-table td, .results ::v-deep .el-table th { padding: 6px 8px; }
+.results ::v-deep .el-table th { background: #f3f4f6; color: #374151; }
+.results ::v-deep .el-table__body tr:hover > td { background: #f9fafb; }
+.results ::v-deep .el-table .current-row > td { background: #eef2ff; }
+
+/* 按钮在本页使用医疗蓝主色 */
+.search-page ::v-deep .el-button--primary { background-color: var(--primary); border-color: var(--primary); }
+.search-page ::v-deep .el-button--primary:focus, 
+.search-page ::v-deep .el-button--primary:hover { filter: brightness(1.05); }
+
+/* 左侧过滤面板粘性定位，便于在长列表中保持可见 */
+.filters { position: sticky; top: 16px; align-self: start; height: calc(100vh - 16px - 32px); overflow: auto; }
 
 @media (max-width: 960px) {
   .search-body { grid-template-columns: 1fr; }

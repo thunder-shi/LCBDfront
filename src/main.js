@@ -7,7 +7,7 @@ Vue.config.productionTip = false
 
 import './assets/icons' // icon
 import 'normalize.css/normalize.css' // A modern alternative to CSS resets
-import './permission' // 权限控制
+// import './permission' // 权限控制（已停用）
 
 import ElementUI from 'element-ui'
 Vue.use(ElementUI)

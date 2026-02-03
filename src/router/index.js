@@ -35,6 +35,11 @@ Router.prototype.push = function push(location) {
  * 所有权限通用的公共页面
  */
 export const constantRoutes = [
+  {
+    path: '/',
+    redirect: '/website/homepage',
+    hidden: true
+  },
   // 如果需要主页，把下面声明打开
   // {
   //   path: '/',

@@ -13,6 +13,9 @@ $--color-primary: #009140;
 /* 改变 icon 字体路径变量，必需 */
 $--font-path: '~element-ui/lib/theme-chalk/fonts';
 
+/* 修正 Dart Sass 对 mix() 第三参的单位警告：传入百分比权重 */
+$fontColorWeight: 0% !default;
+
 @import "../../../node_modules/element-ui/packages/theme-chalk/src/index";
 
 // the :export directive is the magic sauce for webpack
