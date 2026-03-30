@@ -43,6 +43,10 @@ service.interceptors.response.use(
    * You can also judge the status by HTTP Status Code
    */
   response => {
+    // 某些下载场景需要拿到响应头（如 Content-Disposition 文件名）
+    if (response.config && response.config.rawResponse) {
+      return response
+    }
     const res = response.data
     if (!res.code) { // 文件下载
       return res
@@ -50,6 +54,17 @@ service.interceptors.response.use(
 
     // if the custom status is not 200, it is judged as an error.
     if (res.status !== 200) {
+      // 1002 / 4007：登录态失效，统一跳转登录页
+      if (res.status === 1002 || res.status === 4007) {
+        const redirect = encodeURIComponent(window.location.pathname + window.location.search)
+        Message({
+          message: res.message || '登录状态已失效，请重新登录',
+          type: 'warning',
+          duration: 2000
+        })
+        window.location.href = `/Login?redirect=${redirect}`
+        return Promise.reject(new Error(res.message || 'Unauthorized'))
+      }
       Message({
         message: res.message || 'Error',
         type: 'error',

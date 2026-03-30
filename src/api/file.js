@@ -4,6 +4,7 @@ export default {
   upload,
   deleteFile,  
   downloadFile,
+  downloadByPatientFileName,
   getProgressPercent
 }
 
@@ -54,5 +55,16 @@ function downloadFile(id, fileSize) {
       nowProgressPercent = Math.round(100 * progress.loaded / fileSize)
     }
   })  
+}
+
+/** 患者记录「文件名」字段：按名/标识直链下载（GET，blob） */
+function downloadByPatientFileName(fileName) {
+  return request({
+    url: '/common/minio/downloadByPatientFileName',
+    method: 'get',
+    params: { fileName },
+    responseType: 'blob',
+    rawResponse: true
+  })
 }
 

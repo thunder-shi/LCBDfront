@@ -39,7 +39,7 @@ router.beforeEach(async(to, from, next) => {
       if (nextUrl.length) {
         next('/Homepage')
       } else {
-        // const { menuList } = await store.dispatch('user/getUserInfo')
+        const { menuList } = await store.dispatch('user/getUserInfo')
         const asyncRoutes = await filterAsyncRoutes(menuList)
         router.addRoute({ path: '*', redirect: '/404', hidden: true })
         await store.dispatch('generateRoutes', asyncRoutes)
@@ -54,7 +54,7 @@ router.beforeEach(async(to, from, next) => {
       } else {
         try {
           // 获取菜单信息及用户信息
-          // const { menuList } = await store.dispatch('user/getUserInfo')
+          const { menuList } = await store.dispatch('user/getUserInfo')
           await loadMenus(menuList, next, to)
           if (to.path === '/Homepage') {
             const val = '/Homepage'

@@ -97,8 +97,8 @@ export default {
               authAPI.removeAccount()
             }
             this.$message.success('登录成功')
-            // 登录后跳转到已注册的首页路由
-            setTimeout(() => { this.$router.push('/website/homepage', () => {}) }, 200)
+            // 登录后直达检索页，避免回到官网首页造成“像没登录”的错觉
+            setTimeout(() => { this.$router.push('/search', () => {}) }, 200)
             this.loading = false
           } catch (error) {
             this.loading = false

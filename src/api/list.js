@@ -50,7 +50,7 @@ async function changeNodeOrder(keyWords, nodeId, up, moveSearchKeys, moveRegKeys
 }
 
 // 列表结构的查询
-async function getSomeRecords({ keyWords, pageInfo, treeInfo, searchKey, sort, reg, andor }) {
+async function getSomeRecords({ keyWords, pageInfo, treeInfo, searchKey, sort, reg, andor, includeDeleted }) {
   keyWords = await getEncryptKeyWord(keyWords)
   return request({
     url: '/dataList/getSomeRecords',
@@ -59,10 +59,11 @@ async function getSomeRecords({ keyWords, pageInfo, treeInfo, searchKey, sort, r
       keyWords,
       pageInfo,
       treeInfo,
-      searchKey: await getEncryptKeyWord(JSON.stringify(searchKey)),
+      searchKey: await getEncryptKeyWord(JSON.stringify(searchKey != null ? searchKey : {})),
       sort,
-      reg: await getEncryptKeyWord(JSON.stringify(reg)),
-      andor
+      reg: await getEncryptKeyWord(JSON.stringify(reg != null ? reg : {})),
+      andor,
+      includeDeleted: includeDeleted === true
     }
   })
 }
